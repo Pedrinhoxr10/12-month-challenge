@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desafio dos 12 Meses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#efe6d3;
+    --paper-dark:#e4d9c0;
+    --ink:#20232b;
+    --navy:#152a4e;
+    --navy-deep:#0d1c38;
+    --oikawa:#2f7d76;
+    --oikawa-light:#bfe0da;
+    --cap-red:#a52a2a;
+    --cap-blue:#22437a;
+    --gold:#c79a3a;
+    --line:rgba(21,42,78,0.18);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.35), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.25), transparent 45%);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{ font-family:'Cinzel', serif; margin:0; }
+  button{font-family:inherit;}
+
+  /* ---------- TELA DE SENHA ---------- */
+  #gate{
+    position:fixed; inset:0;
+    background:linear-gradient(160deg, var(--navy-deep) 0%, var(--navy) 55%, var(--cap-blue) 100%);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50; padding:24px;
+  }
+  .gate-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:20px;
+    padding:36px 28px; max-width:360px; width:100%; text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  .gate-badge{
+    width:56px; height:56px; margin:0 auto 16px; border-radius:50%;
+    background:conic-gradient(from 90deg, var(--oikawa), var(--gold), var(--cap-red), var(--cap-blue), var(--oikawa));
+    display:flex; align-items:center; justify-content:center;
+  }
+  .gate-badge span{
+    background:var(--paper); border-radius:50%; width:44px; height:44px;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+  }
+  .gate-card h1{ font-size:1.5rem; color:var(--navy); line-height:1.3; }
+  .gate-card p{ font-size:0.88rem; color:#5c5646; margin:10px 0 20px; }
+  .gate-label{
+    font-size:0.7rem; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--navy); font-weight:700; margin-bottom:6px; text-align:left;
+  }
+  #gate-input{
+    width:100%; padding:13px 14px; border-radius:10px; border:1.5px solid var(--line);
+    font-size:1rem; text-align:center; letter-spacing:3px; background:#fff;
+  }
+  #gate-input:focus{ outline:2px solid var(--oikawa); border-color:var(--oikawa); }
+  #gate-btn{
+    margin-top:14px; width:100%; padding:13px; border:none; border-radius:10px;
+    background:var(--navy); color:#fff; font-weight:600; font-size:0.95rem;
+    cursor:pointer; transition:background .15s;
+  }
+  #gate-btn:hover{ background:var(--cap-blue); }
+  #gate-error{ color:var(--cap-red); font-size:0.82rem; margin-top:10px; min-height:1em; }
+
+  /* ---------- APP ---------- */
+  #app{ display:none; max-width:640px; margin:0 auto; padding-bottom:60px; }
+
+  /* banner (imagem sobe direto no Firebase Storage) */
+  .banner-wrap{
+    width:100%; aspect-ratio:597/278; overflow:hidden; position:relative;
+    background:var(--navy-deep); border-bottom:4px solid var(--gold);
+  }
+  .banner-wrap img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .banner-placeholder{
+    position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+    color:rgba(255,255,255,0.55); font-size:0.75rem; text-align:center; padding:12px; gap:4px;
+  }
+  .banner-placeholder strong{ color:rgba(255,255,255,0.8); font-size:0.85rem; }
+
+  header.hero{
+    position:relative;
+    background:linear-gradient(90deg, var(--oikawa) 0%, var(--oikawa) 48%, var(--navy) 52%, var(--cap-blue) 100%);
+    padding:22px 16px; color:#fff; text-align:center;
+    border-bottom:4px solid var(--gold);
+  }
+  header.hero .sub{ font-size:0.85rem; opacity:0.92; font-style:italic; margin-bottom:14px; }
+  .teams-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .team-tag{ display:flex; align-items:center; gap:8px; flex:1; }
+  .team-tag.right{ flex-direction:row-reverse; text-align:right; }
+  .chip-icon{ width:30px; height:30px; flex-shrink:0; }
+  .chip-sub{ font-size:0.58rem; letter-spacing:0.6px; opacity:0.85; text-transform:uppercase; }
+  .chip-main{ font-size:0.76rem; font-weight:700; }
+  .team-tag:first-child .chip-sub, .team-tag:first-child .chip-main{ color:var(--oikawa-light); }
+  .team-tag.right .chip-sub, .team-tag.right .chip-main{ color:#dfe8ff; }
+
+  section{ padding:18px 16px; }
+
+  /* placar */
+  .scoreboard{ background:var(--paper-dark); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+  .scoreboard h2{ font-size:0.95rem; color:var(--navy); margin-bottom:10px; }
+  .bar-track{ display:flex; height:22px; border-radius:11px; overflow:hidden; background:#d8cdb2; border:1px solid var(--line); }
+  .bar-oikawa{ background:var(--oikawa); transition:width .4s ease; }
+  .bar-cap{ background:var(--cap-red); transition:width .4s ease; }
+  .bar-labels{ display:flex; justify-content:space-between; margin-top:8px; font-size:0.8rem; font-weight:600; }
+  .bar-labels .o{ color:var(--oikawa); } .bar-labels .c{ color:var(--cap-red); }
+  .team-icon{ width:26px; height:26px; flex-shrink:0; }
+  .emoji-icon{ font-size:1.3rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+
+  /* meses */
+  .months-title{ font-size:0.9rem; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px; margin:22px 0 10px 4px; }
+  .month{ background:#fbf8f0; border:1px solid var(--line); border-radius:var(--radius); margin-bottom:10px; overflow:hidden; }
+  .month-head{ display:flex; align-items:center; justify-content:space-between; padding:13px 16px; cursor:pointer; }
+  .month-head .m-left{ display:flex; align-items:center; gap:10px; }
+  .m-num{
+    width:30px; height:30px; border-radius:50%; background:var(--navy); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600;
+  }
+  .m-date{ font-size:0.78rem; color:#6b6454; }
+  .m-winner{ font-size:0.75rem; font-weight:600; }
+  .m-winner.o{ color:var(--oikawa); } .m-winner.c{ color:var(--cap-red); } .m-winner.empate{ color:#8a8064; }
+  .chev{ transition:transform .2s; color:var(--navy); }
+  .month.open .chev{ transform:rotate(180deg); }
+  .month-body{ display:none; padding:0 14px 16px; }
+  .month.open .month-body{ display:block; }
+
+  .gifts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:420px){ .gifts{ grid-template-columns:1fr; } }
+  .gift-card{ border:1px solid var(--line); border-radius:10px; padding:10px; background:#fff; }
+  .gift-card .who{ font-size:0.75rem; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .gift-card.oikawa .who{ color:var(--oikawa); }
+  .gift-card.cap .who{ color:var(--cap-red); }
+
+  .photo-drop{
+    border:1.5px dashed var(--line); border-radius:8px; aspect-ratio:4/3;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; color:#8a8064; font-size:0.72rem; text-align:center; overflow:hidden;
+    background:var(--paper); position:relative;
+  }
+  .photo-drop img{ width:100%; height:100%; object-fit:cover; }
+  .photo-drop .cam{ font-size:1.4rem; margin-bottom:4px; }
+  .remove-photo{
+    position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%;
+    background:rgba(20,20,20,0.6); color:#fff; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1;
+  }
+  .remove-photo:hover{ background:rgba(165,42,42,0.85); }
+
+  /* como funciona + critérios */
+  .how-card, .criteria-card{
+    background:var(--paper-dark); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; margin-bottom:14px;
+  }
+  .how-card h2, .criteria-card h2{ font-size:0.95rem; color:var(--navy); margin-bottom:4px; text-align:center; }
+  .criteria-card h2 span{ display:block; font-size:0.68rem; font-weight:400; color:#6b6454; margin-top:2px; }
+  .how-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:12px; }
+  @media (max-width:380px){ .how-grid{ grid-template-columns:1fr; } }
+  .how-item{ text-align:center; font-size:0.72rem; color:#4a4636; line-height:1.35; }
+  .how-icon{ font-size:1.5rem; margin-bottom:4px; }
+  .criteria-list{ list-style:none; padding:0; margin:12px 0 4px; font-size:0.83rem; color:#3a3628; }
+  .criteria-list li{ padding:4px 0; }
+  .criteria-total{ text-align:center; font-weight:700; color:var(--navy); margin-top:8px; font-family:'Cinzel',serif; font-size:0.95rem; }
+
+  .criteria{ margin-top:10px; }
+  .crit-row{ margin-bottom:8px; }
+  .crit-row label{ font-size:0.7rem; display:flex; justify-content:space-between; color:#4a4636; margin-bottom:2px; }
+  .crit-row input[type=range]{ width:100%; accent-color:var(--navy); }
+  .subtotal{ margin-top:8px; text-align:right; font-size:0.85rem; font-weight:700; color:var(--navy); }
+
+  footer.total{ margin:20px 16px 0; background:var(--navy); color:#fff; border-radius:var(--radius); padding:16px; text-align:center; }
+  footer.total .grand{ font-family:'Cinzel',serif; font-size:1.6rem; margin-top:4px; }
+  footer.total small{ opacity:0.75; font-size:0.72rem; }
+</style>
+</head>
+<body>
+
+<!-- TELA DE SENHA -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-badge"><span>🔒</span></div>
+    <h1>Desafio dos 12 Meses</h1>
+    <p>Time Oikawa &amp; Time Capitão América</p>
+    <div class="gate-label">Nosso dia</div>
+    <input id="gate-input" type="password" maxlength="8" placeholder="••••••••" inputmode="numeric">
+    <button id="gate-btn" onclick="tryEnter()">Entrar</button>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="banner-wrap">
+    <img id="bannerImg" alt="Desafio dos 12 Meses">
+    <div class="banner-placeholder" id="bannerPlaceholder">
+      <strong>Espaço do banner</strong>
+      <span>Suba o arquivo "banner.jpg" na pasta "banner" do Firebase Storage</span>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="sub">"Que vença o amor (e a criatividade)."</div>
+    <div class="teams-row">
+      <div class="team-tag">
+        <span class="chip-icon emoji-icon">🏐</span>
+        <div>
+          <div class="chip-sub">Aoba Johsai · Nº 1</div>
+          <div class="chip-main">TIME OIKAWA</div>
+        </div>
+      </div>
+      <div class="team-tag right">
+        <svg class="chip-icon" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.55"/>
+          <path d="M16 9 L17.8 13.8 L23 14.3 L19 17.6 L20.2 22.7 L16 19.9 L11.8 22.7 L13 17.6 L9 14.3 L14.2 13.8 Z" fill="currentColor"/>
+        </svg>
+        <div>
+          <div class="chip-sub">Steve Rogers</div>
+          <div class="chip-main">TIME CAPITÃO AMÉRICA</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="how-card">
+      <h2>★ Como funciona ★</h2>
+      <div class="how-grid">
+        <div class="how-item"><div class="how-icon">🎁</div>Todo dia 2 de cada mês, vocês trocam presentes.</div>
+        <div class="how-item"><div class="how-icon">📋</div>Cada um avalia o presente do outro usando os critérios abaixo.</div>
+        <div class="how-item"><div class="how-icon">🏆</div>O presente com a maior pontuação do mês vence e garante 1 mês no placar.</div>
+        <div class="how-item"><div class="how-icon">⭐</div>No final dos 12 meses, quem tiver mais meses vencidos é o GRANDE CAMPEÃO!</div>
+      </div>
+    </div>
+
+    <div class="criteria-card">
+      <h2>Critérios de avaliação<span>0 a 10 pontos cada</span></h2>
+      <ul class="criteria-list">
+        <li>★ Criatividade</li>
+        <li>★ Romantismo</li>
+        <li>★ Combina com a pessoa</li>
+        <li>★ Fator surpresa / emocional</li>
+        <li>★ Experiência proporcionada</li>
+      </ul>
+      <div class="criteria-total">TOTAL: até 50 pontos</div>
+    </div>
+
+    <div class="scoreboard">
+      <h2>Placar do campeonato</h2>
+      <div class="bar-track">
+        <div class="bar-oikawa" id="barOikawa" style="width:50%"></div>
+        <div class="bar-cap" id="barCap" style="width:50%"></div>
+      </div>
+      <div class="bar-labels">
+        <span class="o" style="display:flex;align-items:center;gap:6px;">
+          <span class="team-icon emoji-icon">🏐</span>
+          <span id="scoreOikawa">0 meses</span>
+        </span>
+        <span class="c" style="display:flex;align-items:center;gap:6px;">
+          <span id="scoreCap">0 meses</span>
+          <svg class="team-icon" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="13" fill="none" stroke="#a52a2a" stroke-width="2"/>
+            <circle cx="16" cy="16" r="9" fill="none" stroke="#a52a2a" stroke-width="1.1" opacity="0.55"/>
+            <path d="M16 9 L17.8 13.8 L23 14.3 L19 17.6 L20.2 22.7 L16 19.9 L11.8 22.7 L13 17.6 L9 14.3 L14.2 13.8 Z" fill="#a52a2a"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="months-title">Registro mensal</div>
+    <div id="monthsList"></div>
+  </section>
+
+  <footer class="total">
+    <small>PONTUAÇÃO TOTAL ACUMULADA</small>
+    <div class="grand" id="grandTotal">0 × 0</div>
+  </footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+// ==================== COLE AQUI AS CHAVES DO SEU PROJETO FIREBASE ====================
+// Firebase > Visão geral do projeto > Adicionar app > Web (</>) > copiar o objeto abaixo
+const firebaseConfig = {
+  apiKey: "AIzaSyBdgD14Yqv97cBNlAtbSmtzaSgAhLX3ISE",
+  authDomain: "bp-sz-2596a.firebaseapp.com",
+  projectId: "bp-sz-2596a",
+  storageBucket: "bp-sz-2596a.firebasestorage.app",
+  messagingSenderId: "913812909427",
+  appId: "1:913812909427:web:3bade0cd2f0fb1dcb2e906"
+};
+// =======================================================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+const criteria = ["Criatividade","Romantismo","Combina com a pessoa","Fator surpresa / emocional","Experiência proporcionada"];
+const months = [
+  {id:'mes-01', n:1, date:"02/09"}, {id:'mes-02', n:2, date:"02/10"}, {id:'mes-03', n:3, date:"02/11"}, {id:'mes-04', n:4, date:"02/12"},
+  {id:'mes-05', n:5, date:"02/01"}, {id:'mes-06', n:6, date:"02/02"}, {id:'mes-07', n:7, date:"02/03"}, {id:'mes-08', n:8, date:"02/04"},
+  {id:'mes-09', n:9, date:"02/05"}, {id:'mes-10', n:10, date:"02/06"}, {id:'mes-11', n:11, date:"02/07"}, {id:'mes-12', n:12, date:"02/08"}
+];
+
+const state = {};
+months.forEach(m => { state[m.id] = { oikawa:{fotoUrl:null,notas:[0,0,0,0,0]}, cap:{fotoUrl:null,notas:[0,0,0,0,0]} }; });
+
+function subtotal(arr){ return arr.reduce((a,b)=>a+b,0); }
+
+// ---------- SENHA ----------
+const SENHA = "02082026";
+window.tryEnter = function(){
+  const val = document.getElementById('gate-input').value.trim();
+  if(val === SENHA){
+    document.getElementById('gate-error').textContent = '';
+    document.getElementById('gate-btn').disabled = true;
+    signInAnonymously(auth).catch(err=>{
+      document.getElementById('gate-error').textContent = 'Erro ao conectar: ' + err.message;
+      document.getElementById('gate-btn').disabled = false;
+    });
+  } else {
+    document.getElementById('gate-error').textContent = 'Senha incorreta, tenta de novo.';
+  }
+};
+document.getElementById('gate-input').addEventListener('keydown', e=>{ if(e.key==='Enter') window.tryEnter(); });
+
+onAuthStateChanged(auth, user=>{
+  if(user){
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    startApp();
+  }
+});
+
+let started = false;
+async function startApp(){
+  if(started) return;
+  started = true;
+  renderMonths();
+  await seedMonthsIfNeeded();
+  listenToMonths();
+  loadBanner();
+}
+
+async function seedMonthsIfNeeded(){
+  for(const m of months){
+    const refDoc = doc(db, 'meses', m.id);
+    const snap = await getDoc(refDoc);
+    if(!snap.exists()){
+      await setDoc(refDoc, {
+        data: m.date,
+        oikawa: { fotoUrl: null, notas: [0,0,0,0,0] },
+        cap: { fotoUrl: null, notas: [0,0,0,0,0] }
+      });
+    }
+  }
+}
+
+function listenToMonths(){
+  onSnapshot(collection(db,'meses'), snapshot=>{
+    snapshot.forEach(docSnap=>{
+      if(state[docSnap.id]){
+        state[docSnap.id] = docSnap.data();
+        applyMonthToUI(docSnap.id);
+      }
+    });
+    updateOverall();
+  });
+}
+
+function loadBanner(){
+  getDownloadURL(ref(storage, 'banner/banner.jpg'))
+    .then(url=>{ document.getElementById('bannerImg').src = url; })
+    .catch(()=>{ document.getElementById('bannerPlaceholder').style.display = 'flex'; });
+}
+
+function renderMonths(){
+  const list = document.getElementById('monthsList');
+  list.innerHTML = '';
+  months.forEach((m)=>{
+    const div = document.createElement('div');
+    div.className = 'month';
+    div.id = 'month-'+m.id;
+    div.innerHTML = `
+      <div class="month-head" onclick="toggleMonth('${m.id}')">
+        <div class="m-left">
+          <div class="m-num">${m.n}º</div>
+          <div><div style="font-weight:600;font-size:0.85rem;">Mês ${m.n}</div><div class="m-date">${m.date}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="m-winner" id="winner-${m.id}"></div>
+          <div class="chev">▾</div>
+        </div>
+      </div>
+      <div class="month-body">
+        <div class="gifts">
+          ${giftCardHtml(m.id,'oikawa','Presente Time Oikawa')}
+          ${giftCardHtml(m.id,'cap','Presente Time Capitão')}
+        </div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function giftCardHtml(mid, team, label){
+  const rows = criteria.map((c,ci)=>`
+    <div class="crit-row">
+      <label><span>${c}</span><span id="val-${mid}-${team}-${ci}">0</span></label>
+      <input type="range" min="0" max="10" value="0"
+        oninput="onSliderInput('${mid}','${team}',${ci},this.value)"
+        onchange="onSliderCommit('${mid}','${team}')">
+    </div>`).join('');
+  return `
+    <div class="gift-card ${team}">
+      <div class="who">${team==='oikawa'?'🏐':'🛡️'} ${label}</div>
+      <div class="photo-drop" id="drop-${mid}-${team}" onclick="document.getElementById('file-${mid}-${team}').click()">
+        <div class="cam">📷</div>
+        <div>Toque para adicionar foto</div>
+      </div>
+      <input type="file" accept="image/*" id="file-${mid}-${team}" style="display:none"
+        onchange="onPhotoSelected(event, '${mid}', '${team}')">
+      <div class="criteria">${rows}</div>
+      <div class="subtotal">Nota: <span id="sub-${mid}-${team}">0</span>/50</div>
+    </div>`;
+}
+
+window.toggleMonth = function(mid){ document.getElementById('month-'+mid).classList.toggle('open'); };
+
+window.onSliderInput = function(mid, team, ci, value){
+  state[mid][team].notas[ci] = parseInt(value,10);
+  document.getElementById(`val-${mid}-${team}-${ci}`).textContent = value;
+  document.getElementById(`sub-${mid}-${team}`).textContent = subtotal(state[mid][team].notas);
+  updateWinnerBadge(mid);
+};
+
+window.onSliderCommit = function(mid, team){
+  updateDoc(doc(db,'meses', mid), { [`${team}.notas`]: state[mid][team].notas }).catch(err=>console.error(err));
+};
+
+function photoMarkup(url, mid, team){
+  return `<img src="${url}" alt="Foto do presente"><button class="remove-photo" onclick="removePhoto(event,'${mid}','${team}')" title="Remover foto">✕</button>`;
+}
+
+// comprime a foto do presente (estilo WhatsApp) antes de subir, só pra economizar espaço no banco
+function compressImage(file, maxDim = 1280, quality = 0.75){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > height && width > maxDim){
+          height = Math.round(height * (maxDim / width));
+          width = maxDim;
+        } else if(height >= width && height > maxDim){
+          width = Math.round(width * (maxDim / height));
+          height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob=>{
+          if(blob) resolve(blob); else reject(new Error('Falha ao comprimir imagem'));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+window.onPhotoSelected = async function(e, mid, team){
+  const file = e.target.files[0];
+  if(!file) return;
+  const drop = document.getElementById(`drop-${mid}-${team}`);
+  drop.innerHTML = '<div class="cam">⏳</div><div>Comprimindo...</div>';
+  try{
+    const compressed = await compressImage(file);
+    drop.innerHTML = '<div class="cam">⏳</div><div>Enviando...</div>';
+    const storageRef = ref(storage, `fotos/${mid}/${team}.jpg`);
+    await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg' });
+    const url = await getDownloadURL(storageRef);
+    await updateDoc(doc(db,'meses',mid), { [`${team}.fotoUrl`]: url });
+    drop.innerHTML = photoMarkup(url, mid, team);
+  }catch(err){
+    drop.innerHTML = '<div class="cam">⚠️</div><div>Erro ao enviar, toque p/ tentar de novo</div>';
+    console.error(err);
+  }
+};
+
+window.removePhoto = async function(e, mid, team){
+  e.stopPropagation();
+  if(!confirm('Remover esta foto?')) return;
+  const drop = document.getElementById(`drop-${mid}-${team}`);
+  drop.innerHTML = '<div class="cam">⏳</div><div>Removendo...</div>';
+  try{
+    await deleteObject(ref(storage, `fotos/${mid}/${team}.jpg`)).catch(()=>{});
+    await updateDoc(doc(db,'meses',mid), { [`${team}.fotoUrl`]: null });
+    drop.innerHTML = '<div class="cam">📷</div><div>Toque para adicionar foto</div>';
+  }catch(err){
+    drop.innerHTML = '<div class="cam">⚠️</div><div>Erro ao remover</div>';
+    console.error(err);
+  }
+};
+
+function applyMonthToUI(mid){
+  ['oikawa','cap'].forEach(team=>{
+    const data = state[mid][team];
+    const rangeEls = document.querySelectorAll(`#month-${mid} .gift-card.${team} .crit-row input[type=range]`);
+    data.notas.forEach((val,ci)=>{
+      const valEl = document.getElementById(`val-${mid}-${team}-${ci}`);
+      if(valEl) valEl.textContent = val;
+      if(rangeEls[ci]) rangeEls[ci].value = val;
+    });
+    const subEl = document.getElementById(`sub-${mid}-${team}`);
+    if(subEl) subEl.textContent = subtotal(data.notas);
+    const drop = document.getElementById(`drop-${mid}-${team}`);
+    if(drop){
+      if(data.fotoUrl && !drop.querySelector('img')){
+        drop.innerHTML = photoMarkup(data.fotoUrl, mid, team);
+      } else if(!data.fotoUrl && drop.querySelector('img')){
+        drop.innerHTML = '<div class="cam">📷</div><div>Toque para adicionar foto</div>';
+      }
+    }
+  });
+  updateWinnerBadge(mid);
+}
+
+function updateWinnerBadge(mid){
+  const so = subtotal(state[mid].oikawa.notas);
+  const sc = subtotal(state[mid].cap.notas);
+  const winnerEl = document.getElementById(`winner-${mid}`);
+  if(!winnerEl) return;
+  if(so === sc){ winnerEl.textContent = 'Empate'; winnerEl.className = 'm-winner empate'; }
+  else if(so > sc){ winnerEl.textContent = 'Vence: Oikawa'; winnerEl.className = 'm-winner o'; }
+  else { winnerEl.textContent = 'Vence: Cap'; winnerEl.className = 'm-winner c'; }
+}
+
+function updateOverall(){
+  let winsOikawa = 0, winsCap = 0;
+  months.forEach(m=>{
+    const so = subtotal(state[m.id].oikawa.notas);
+    const sc = subtotal(state[m.id].cap.notas);
+    if(so > sc) winsOikawa++;
+    else if(sc > so) winsCap++;
+  });
+  const total = winsOikawa + winsCap;
+  const pctO = total === 0 ? 50 : (winsOikawa/total)*100;
+  document.getElementById('barOikawa').style.width = pctO + '%';
+  document.getElementById('barCap').style.width = (100-pctO) + '%';
+  document.getElementById('scoreOikawa').textContent = winsOikawa + (winsOikawa===1?' mês':' meses');
+  document.getElementById('scoreCap').textContent = winsCap + (winsCap===1?' mês':' meses');
+  document.getElementById('grandTotal').textContent = winsOikawa + ' × ' + winsCap;
+}
+</script>
+</body>
+</html>
